@@ -45,16 +45,6 @@ def self.cr_pg_converter(v : Array({{cls.id}}).class)
 Array({{cls.id}})
 end
 
-{% if cls.id != Nil %}
-def self.cr_pg_converter(v : ({{cls.id}}|Nil).class)
-v
-end
-
-def self.cr_pg_converter(v : Array(({{cls.id}}|Nil)).class)
-Array({{cls.id}})
-end
-{% end %}
-
 {% if cls.resolve < Value %}
 struct ::{{cls.id}}
 #{% unless cls.resolve < ::PG::Types::Converter %}
