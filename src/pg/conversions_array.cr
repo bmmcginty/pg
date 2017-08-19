@@ -16,27 +16,23 @@ to_pg io
 end
 
 def to_pg(io)
+puts "to_pg,#{T}"
 #ndims,flags,oid,dims|lbounds,arry
 1.to_pg io
 nils = self.any? { |i| i==nil }
 #write nil flag
 (nils ? 1 : 0).to_pg io
+cv=PG::Types.cr_pg_converter(T)
 #write type
-T.pg_oid.to_pg io
+cv.pg_oid.to_pg io
 #size and lbounds (which defaults to 1)
 size.to_pg io
 1.to_pg io
-cv=PG::Types.cr_pg_converter(T)
 each do |i|
 startpos=io.tell
 0.to_pg io
 datastartpos=io.tell
-case cv
-when PG::Types::Converter.class
-cv.to_pg io: io, obj: i
-else
-i.to_pg io
-end
+do_convert(cv,io,i)
 endpos=io.tell
 io.seek startpos
 (endpos-datastartpos).to_pg io
@@ -44,6 +40,13 @@ io.seek endpos
 end #each
 io.seek 0
 #puts io.gets_to_end.to_slice.hexstring
+end
+
+def do_convert(cv : PG::Types::Converter.class, io, i)
+cv.to_pg io: io, obj: i
+end
+def do_convert(cv,io,i)
+i.to_pg io
 end
 
 def self.from_pg(io : IO)

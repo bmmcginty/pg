@@ -31,10 +31,12 @@ paramTypes=Array(UInt32).new(args.size)
 paramFormats=Array(Int32).new(args.size)
 paramValues=Pointer(Pointer(UInt8)).malloc(args.size)
 paramLengths=Array(Int32).new(args.size)
+puts "args:#{args}"
 args.each_with_index do |i,idx|
 next if i.is_a?(Slice(UInt8))
 converter=Types.cr_pg_converter(i.class)
 oid,conv=do_convert(i,converter)
+puts "i.class:#{i.class}, converter:#{converter}, oid:#{oid}, conv:#{conv}"
 paramTypes << oid.to_u32
 paramFormats << ((conv[:format]==:text) ? 0_i32 : 1_i32)
 paramLengths << conv[:value].as(IO::Memory).size

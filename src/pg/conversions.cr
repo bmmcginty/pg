@@ -44,7 +44,7 @@ def self.pg_array
 Array(Nil)
 end
 def to_pg(io)
-io.write "".to_slice
+-1.to_pg io
 end
 def self.from_pg(io)
 nil

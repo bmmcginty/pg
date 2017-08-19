@@ -1,9 +1,10 @@
-def dbeq(db,a,b)
-db.query("select $1,$2",
-a,b) do |rs|
+def dbeq(db,a)
+db.query("select $1::text,$2,$3::text",
+"start",a,"end") do |rs|
 rs.each do
+rs.read.should eq "start"
 rs.read.should eq a
-rs.read.should eq b
+rs.read.should eq "end"
 end
 end
 end
@@ -19,6 +20,12 @@ string=["test","TESTing"]
 chars=['a','b']
 {% for w in %w(i16 i32 i64 f32 f64 bool string chars) %}
 it "should convert {{w.id}}" do
-dbeq(db,{{w.id}}[0],{{w.id}})
+dbeq(db,{{w.id}}[0])
 end
+it "should convert [{{w.id}}]" do
+dbeq(db,{{w.id}})
+end
+#it "should convert [{{w.id}},nil]" do
+#dbeq(db,[{{w.id}}[0],{{w.id}}[1],nil])
+#end
 {% end %}

@@ -9,10 +9,11 @@ jp=JSON.parse %(
 )
 jpa=[jp]*5
 it "handles arrays of jsonb" do
-PG_DB.query("select $1",
-jpa) do |rs|
+PG_DB.query("select $1,$2",
+jpa,"test") do |rs|
 rs.each do
 rs.read.should eq jpa
+rs.read.should eq "test"
 end
 end
 end
