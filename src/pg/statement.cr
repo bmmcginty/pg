@@ -19,11 +19,11 @@ def do_convert(instance, cls : PG::Types::Converter.class)
 {cls.pg_oid,cls.to_pg(instance)}
 end
 def do_convert(instance, cls)
-if cls.is_a?(PG::Types::Converter.class)
-do_convert(instance,cls.as(PG::Types::Converter.class))
-else
+#if cls.is_a?(PG::Types::Converter.class)
+#do_convert(instance,cls.as(PG::Types::Converter.class))
+#else
 {cls.pg_oid,instance.to_pg}
-end
+#end
 end
 
 protected def perform_query(args : Enumerable) : DB::ResultSet
