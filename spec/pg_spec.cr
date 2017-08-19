@@ -6,12 +6,22 @@ describe Pg do
 jp=JSON.parse %(
 {"test":[true,1,"1",null]}
 )
+it "handles arrays of jsonb" do
+jpa=[jp]*5
+PG_DB.query("select $1",
+jpa) do |rs|
+rs.each do
+rs.read.should eq jpa
+end
+end
+end
+end
 it "handles jsonb" do
 PG_DB.exec("create table if not exists test (t jsonb)")
 #do |rs|
 #puts "in block"
 #end
-PG_DB.exec("insert into test (t) values ($1)",[jp])
+PG_DB.exec("insert into test (t) values ($1)",jp)
 # do |rs|
 #puts "rows:#{rs.row_count}"
 #puts "inserted"

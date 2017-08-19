@@ -7,8 +7,6 @@ Char.class|Nil.class|Int16.class|Int32.class|Int64.class|Float32.class|Float64.c
 Array(Char).class|Array(Nil).class|Array(Int16).class|Array(Int32).class|Array(Int64).class|Array(Float32).class|Array(Float64).class|Array(String).class|Array(Time).class|Array(Bool).class|
 Converter
 
-#This hash stores a mapping between pg oids and either a direct crystal class or a converter.
-#Converters can transparently adapt PG types to Crystal types and back.
 @@oids_to_crystal_classes=Hash(Int32,Tt).new
 #if we get something from the db and we want to determine the crystal type
 def self.oids_to_crystal_classes
@@ -17,11 +15,21 @@ end
 
 #if you want to override the to_pg and from_pg methods, call add_converter with your source type and conversion class
 macro add_converter(cls,converter)
+#no array
+class {{converter.id}}_na < {{converter.id}}
+def self.type
+{{cls.id}}
+end
+end
+class {{converter.id}}_a < {{converter.id}}
+def self.type
+Array({{cls.id}})
+end
+end
+
 module PG::Types
-@@oids_to_crystal_classes[{{converter.id}}.pg_oid]=ConverterHolder({{converter.id}}).new
-@@oids_to_crystal_classes[{{converter.id}}.pg_array_oid]=ConverterHolder(Array({{converter.id}})).new
-#Array({{converter.id}}).new.as(Array(PG::Types::Converter))
-#ConverterHolder(Array({{converter.id}})).new
+@@oids_to_crystal_classes[{{converter.id}}.pg_oid]={{converter.id}}_na.new
+@@oids_to_crystal_classes[{{converter.id}}.pg_array_oid]={{converter.id}}_a.new
 
 def self.cr_pg_converter(v : {{cls.id}}.class)
 {{converter.id}}
@@ -30,6 +38,14 @@ def self.cr_pg_converter(v : Array({{cls.id}}).class)
 Array({{converter.id}})
 end #def
 end #module
+
+class {{converter.id}}
+def self.to_pg(obj : {{cls}})
+io=IO::Memory.new
+self.to_pg io: io, obj: obj
+{ format: :binary, value: io }
+end #def
+end #class
 end #macro
 
 #define a new built-in type
