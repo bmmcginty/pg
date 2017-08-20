@@ -1,11 +1,8 @@
-puts "spec_helper"
 require "spec"
 require "../src/pg"
 
 DB_URL = ENV["DATABASE_URL"]? || "postgres://bmmcginty:bmmcginty@localhost/test"
-puts "opening"
 PG_DB  = DB.open(DB_URL)
-puts "opened"
 
 def with_db
   DB.open(DB_URL) do |db|

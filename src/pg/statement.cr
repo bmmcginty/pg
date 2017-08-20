@@ -18,12 +18,9 @@ end
 def do_convert(instance, cls : PG::Types::Converter.class)
 {cls.pg_oid,cls.to_pg(instance)}
 end
+
 def do_convert(instance, cls)
-#if cls.is_a?(PG::Types::Converter.class)
-#do_convert(instance,cls.as(PG::Types::Converter.class))
-#else
 {cls.pg_oid,instance.to_pg}
-#end
 end
 
 protected def perform_query(args : Enumerable) : DB::ResultSet
@@ -31,12 +28,12 @@ paramTypes=Array(UInt32).new(args.size)
 paramFormats=Array(Int32).new(args.size)
 paramValues=Pointer(Pointer(UInt8)).malloc(args.size)
 paramLengths=Array(Int32).new(args.size)
-puts "args:#{args}"
+#puts "args:#{args}"
 args.each_with_index do |i,idx|
 next if i.is_a?(Slice(UInt8))
 converter=Types.cr_pg_converter(i.class)
 oid,conv=do_convert(i,converter)
-puts "i.class:#{i.class}, converter:#{converter}, oid:#{oid}, conv:#{conv}"
+#puts "i.class:#{i.class}, converter:#{converter}, oid:#{oid}, conv:#{conv}"
 paramTypes << oid.to_u32
 paramFormats << ((conv[:format]==:text) ? 0_i32 : 1_i32)
 paramLengths << conv[:value].as(IO::Memory).size

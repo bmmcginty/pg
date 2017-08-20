@@ -16,7 +16,7 @@ to_pg io
 end
 
 def to_pg(io)
-puts "to_pg,#{T}"
+#puts "to_pg,#{T}"
 #ndims,flags,oid,dims|lbounds,arry
 1.to_pg io
 nils = self.any? { |i| i==nil }

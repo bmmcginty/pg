@@ -194,7 +194,7 @@ if busy==0
 ret=LibPQ.get_result(@connection)
 return ret
 end
-@connection.create_event_r LibPQ.socket(@connection)
+create_event_r LibPQ.socket(@connection)
 Scheduler.reschedule
 end #while
 end #def

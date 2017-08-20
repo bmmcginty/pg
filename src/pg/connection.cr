@@ -7,7 +7,6 @@ class Connection < DB::Connection
 include ::PG::IOUtils
 @closed = false
 @connection : LibPQ::Conn
-@@connections : Array(Connection)?
 @fiber : Fiber
 @flags = ""
 
@@ -22,7 +21,9 @@ end
 def initialize(context)
 super
 @fiber=Fiber.current
-@connection=LibPQ.connect_start(context.uri.to_s)
+cu=context.uri.dup
+cu.query=nil
+@connection=LibPQ.connect_start(cu.to_s)
 begin
 connect_loop
 LibPQ.setnonblocking(@connection,1)
@@ -30,8 +31,6 @@ rescue e
 do_close
 raise e
 end
-@@connections||=Array(Connection).new
-@@connections.not_nil! << self
 end
 
 def handle_send

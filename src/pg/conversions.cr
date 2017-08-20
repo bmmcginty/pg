@@ -3,6 +3,12 @@ require "./conversions_json.cr"
 require "./conversions_array.cr"
 require "./types.cr"
 
+class Object
+def to_pg
+raise Exception.new("to_pg for #{self} not impl")
+end
+end
+
 JAN_1_2K_TICKS = Time.new(2000, 1, 1, kind: Time::Kind::Utc).ticks
 ISO_8601 = "%FT%X.%L%z" 
 struct Time

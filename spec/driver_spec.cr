@@ -1,4 +1,3 @@
-puts "driver_spec"
 require "./spec_helper"
 
 def assert_single_read(rs, value_type, value)
