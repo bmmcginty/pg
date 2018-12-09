@@ -103,7 +103,8 @@ end
 
 def read_without_converter(type)
 io=get_io
-return nil if io==nil
+return nil unless io
+#puts "type #{type} io #{io}"
 type.from_pg io.not_nil!
 end
 
@@ -183,18 +184,23 @@ end
 def get_tuple
 while 1
 good=LibPQ.consume_input(@connection)
+#puts "good:#{good}"
 if good==0
 e=String.new LibPQ.error_message(connection)
+#puts "e:#{e}"
 #puts "eek! #{e}"
 raise DB::Error.new(e)
 end
 #handle_notifications
 busy=LibPQ.is_busy(@connection)
+#puts "busy:#{busy}"
 if busy==0
 ret=LibPQ.get_result(@connection)
+#puts "ret:#{ret}"
 return ret
 end
 create_event_r LibPQ.socket(@connection)
+#puts "rescheduling"
 Scheduler.reschedule
 end #while
 end #def

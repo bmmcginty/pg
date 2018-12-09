@@ -30,6 +30,9 @@ size.to_pg io
 1.to_pg io
 each do |i|
 startpos=io.tell
+if i==nil
+-1.to_pg io
+else
 0.to_pg io
 datastartpos=io.tell
 do_convert(cv,io,i)
@@ -37,6 +40,7 @@ endpos=io.tell
 io.seek startpos
 (endpos-datastartpos).to_pg io
 io.seek endpos
+end #not nil
 end #each
 io.seek 0
 #puts io.gets_to_end.to_slice.hexstring
@@ -54,6 +58,10 @@ ndims=Int32.from_pg(io)
 if ndims > 1
 raise Exception.new("Multi-dimentional arrays are not supported. gvien NDims of #{ndims}")
 end
+t=T.pg_array.new
+if ndims==0
+return t
+end
 flags=Int32.from_pg(io)
 oid=Int32.from_pg(io)
 dims = [] of Int32
@@ -70,7 +78,6 @@ total=1
 dims.each do |dim|
 total=total*dim
 end #each dim
-t=T.pg_array.new
 total.times do |idx|
 size=Int32.from_pg io
 if size==-1

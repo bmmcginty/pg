@@ -1,7 +1,9 @@
 module PG
 module Types
 
-type -1,-2,Nil,:null
+#nulls are passed as null pointers; we should be able to pass them as string oids here.
+#0,0?
+type 0,0,Nil,:null
 type 16,1000,Bool,:bool
 type 23,1007,Int32,:int32
 type 18,1002,Char,:char

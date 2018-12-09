@@ -9,31 +9,43 @@ raise Exception.new("to_pg for #{self} not impl")
 end
 end
 
-JAN_1_2K_TICKS = Time.new(2000, 1, 1, kind: Time::Kind::Utc).ticks
+#JAN_1_2K_TICKS = Time.new(2000, 1, 1, kind: Time::Kind::Utc).ticks
+PG_EPOCH=Time.utc(2000,1,1,0,0,0).epoch_microseconds
 ISO_8601 = "%FT%X.%L%z" 
 struct Time
+MICROSECONDS_PER_SECOND = 1_000_000_i64
+
+def microsecond
+nanosecond / NANOSECONDS_PER_MICROSECOND
+end
+
+def epoch_microseconds : Int64
+epoch * MICROSECONDS_PER_SECOND + microsecond
+end
+
+def self.epoch_microseconds(microseconds : Int) : Time
+seconds=UNIX_SECONDS + (microseconds / MICROSECONDS_PER_SECOND)
+nanoseconds = (microseconds % MICROSECONDS_PER_SECOND) * NANOSECONDS_PER_MICROSECOND
+utc(seconds: seconds, nanoseconds: nanoseconds.to_i)
+end
+
+#puts Time.epoch_microseconds(PG_EPOCH)
 def to_pg(io : IO)
-v=to_utc.ticks
-v = v - JAN_1_2K_TICKS
-v = v / Time::Span::TicksPerMillisecond
-v = v * 1000
+v=to_utc.epoch_microseconds
+v = v - PG_EPOCH
 v.to_pg io
 end
+
 def self.from_pg(io)
-v=Int64.from_pg(io)/1000
-v = JAN_1_2K_TICKS + (Time::Span::TicksPerMillisecond*v)
-t=new ticks: v, kind: Kind::Utc
-t
+v=Int64.from_pg(io)
+Time.epoch_microseconds(v+PG_EPOCH)
 end
+
 end
 
 struct Bool
 def to_pg(io)
-if self == true
-t=1_i8
-else
-t=0_i8
-end
+t = self ? 1_i8 : 0_i8
 t.to_pg io
 end
 def self.from_pg(io)
@@ -50,7 +62,7 @@ def self.pg_array
 Array(Nil)
 end
 def to_pg(io)
--1.to_pg io
+io
 end
 def self.from_pg(io)
 nil

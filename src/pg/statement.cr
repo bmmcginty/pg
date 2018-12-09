@@ -28,22 +28,33 @@ paramTypes=Array(UInt32).new(args.size)
 paramFormats=Array(Int32).new(args.size)
 paramValues=Pointer(Pointer(UInt8)).malloc(args.size)
 paramLengths=Array(Int32).new(args.size)
-#puts "args:#{args}"
-args.each_with_index do |i,idx|
+##puts "args:#{args}"
+idx=-1
+args.each_with_index do |i|
 next if i.is_a?(Slice(UInt8))
+idx+=1
 converter=Types.cr_pg_converter(i.class)
 oid,conv=do_convert(i,converter)
-#puts "i.class:#{i.class}, converter:#{converter}, oid:#{oid}, conv:#{conv}"
 paramTypes << oid.to_u32
 paramFormats << ((conv[:format]==:text) ? 0_i32 : 1_i32)
 paramLengths << conv[:value].as(IO::Memory).size
 pv=conv[:value].as(IO::Memory)
-paramValues[idx]=pv.to_slice.pointer 0
-# << pointerof(pv)
+paramValues[idx] = if i != nil
+pv.to_slice.pointer 0
+else
+Pointer(UInt8).null
+end
 end
 resultFormat=1 #binary
-LibPQ.send_query_params(connection,@query,args.size,paramTypes,paramValues,paramLengths,paramFormats,resultFormat)
-LibPQ.set_single_row_mode connection
+#idx+1 was args.size
+rv=LibPQ.send_query_params(connection,@query,idx+1,paramTypes,paramValues,paramLengths,paramFormats,resultFormat)
+connection.handle_send
+#puts "send_query_params:#{rv} #{@query.split(" from ")[0]}"
+if rv==0
+em=String.new LibPQ.error_message(connection)
+raise DB::Error.new em
+end
+#LibPQ.set_single_row_mode connection
 ResultSet.new self,@query
 end #perform_query
 

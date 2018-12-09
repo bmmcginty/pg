@@ -41,7 +41,17 @@ def self.cr_pg_converter(v : {{cls.id}}.class)
 v
 end
 
+{% if cls.id != :Nil %}
+def self.cr_pg_converter(v : ({{cls.id+"|Nil"}}).class)
+{{cls.id}}
+end
+{% end %}
+
 def self.cr_pg_converter(v : Array({{cls.id}}).class)
+Array({{cls.id}})
+end
+
+def self.cr_pg_converter(v : Array({{cls.id}}|Nil).class)
 Array({{cls.id}})
 end
 

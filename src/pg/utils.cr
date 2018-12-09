@@ -10,14 +10,13 @@ else
 flags=LibEvent2::EventFlags::None
 {% if mode.id == :r %}
 flags = LibEvent2::EventFlags::Read
-{% end %}
-{% if mode.id == :w %}
+{% elsif mode.id == :w %}
 flags = LibEvent2::EventFlags::Write
+{% elsif mode.id == :rw %}
+flags = LibEvent2::EventFlags::Read|LibEvent2::EventFlags::Write
+{% else %}
+{{raise "invalid mode " + mode }}
 {% end %}
-{% if mode == :rw %}
-flags = LibEvent2::EventFlags::Read+LibEvent2::EventFlags::Write
-{% end %}
-#puts "flags:#{flags}"
 tev=Scheduler.ebo.new_event(fd,flags,self) do |s,flags,data|
 c=data.as({{@type.name.id}})
 t=""

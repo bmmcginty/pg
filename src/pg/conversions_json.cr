@@ -10,6 +10,7 @@ Array(JSON::Any|Nil)
 end
 def self.from_pg(io : IO)
 v=io.read_byte
+#io.gets_to_end
 JSON.parse io
 end
 def self.to_pg(io : IO, obj)
@@ -19,14 +20,14 @@ end
 end
 
 class PG::Types::JSONConverter < PG::Types::Converter
-def self.pg_array
-Array(JSON::Any|Nil)
-end
 def self.pg_oid
 114
 end
-def self.pg_aoid
+def self.pg_array_oid
 199
+end
+def self.pg_array
+Array(JSON::Any|Nil)
 end
 def self.from_pg(io)
 JSON.parse io
