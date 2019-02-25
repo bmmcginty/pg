@@ -20,11 +20,11 @@ nanosecond / NANOSECONDS_PER_MICROSECOND
 end
 
 def epoch_microseconds : Int64
-epoch * MICROSECONDS_PER_SECOND + microsecond
+to_unix * MICROSECONDS_PER_SECOND + microsecond
 end
 
 def self.epoch_microseconds(microseconds : Int) : Time
-seconds=UNIX_SECONDS + (microseconds / MICROSECONDS_PER_SECOND)
+seconds=UNIX_EPOCH.total_seconds + (microseconds / MICROSECONDS_PER_SECOND)
 nanoseconds = (microseconds % MICROSECONDS_PER_SECOND) * NANOSECONDS_PER_MICROSECOND
 utc(seconds: seconds, nanoseconds: nanoseconds.to_i)
 end

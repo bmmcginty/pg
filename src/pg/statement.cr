@@ -28,7 +28,6 @@ paramTypes=Array(UInt32).new(args.size)
 paramFormats=Array(Int32).new(args.size)
 paramValues=Pointer(Pointer(UInt8)).malloc(args.size)
 paramLengths=Array(Int32).new(args.size)
-##puts "args:#{args}"
 idx=-1
 args.each_with_index do |i|
 next if i.is_a?(Slice(UInt8))

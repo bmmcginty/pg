@@ -1,7 +1,7 @@
 require "db"
 require "json"
 
-class Scheduler
+module Crystal::EventLoop
 def self.ebo
 @@eb
 end

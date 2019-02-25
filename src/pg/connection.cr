@@ -56,7 +56,7 @@ raise DB::Error.new(e)
 end
 break if flushval == 0
 create_event_rw fd
-Scheduler.reschedule
+Crystal::Scheduler.reschedule
 if flags.index("r")
 LibPQ.consume_input connection
 end
@@ -81,7 +81,7 @@ break
 when LibPQ::PollingStatusType::Ok
 break
 end #case
-Scheduler.reschedule
+Crystal::Scheduler.reschedule
 status=LibPQ.connect_poll(self)
 next
 end #while

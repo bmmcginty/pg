@@ -2,7 +2,7 @@ module PG
 module IOUtils
 macro included
 {% for mode in %w(r w rw) %}
-@event_{{mode.id}} : Event::Event? = nil
+@event_{{mode.id}} : Crystal::Event? = nil
 def create_event_{{mode.id}}(fd)
 ev = if @event_{{mode.id}}
 @event_{{mode.id}}
@@ -17,7 +17,7 @@ flags = LibEvent2::EventFlags::Read|LibEvent2::EventFlags::Write
 {% else %}
 {{raise "invalid mode " + mode }}
 {% end %}
-tev=Scheduler.ebo.new_event(fd,flags,self) do |s,flags,data|
+tev=Crystal::EventLoop.ebo.new_event(fd,flags,self) do |s,flags,data|
 c=data.as({{@type.name.id}})
 t=""
 if flags.includes?(LibEvent2::EventFlags::Read)

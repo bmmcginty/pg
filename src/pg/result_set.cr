@@ -67,6 +67,12 @@ end
 t
 end
 
+def [](key)
+@col_num=0
+@col_num=column_names.index(key).not_nil!
+read
+end
+
 def get_io
 #puts "get_io:#{row_num},tuple:#{@tuple},col:#{col_num},st:#{st},stc:#{stc}"
 @col_num+=1
@@ -201,7 +207,7 @@ return ret
 end
 create_event_r LibPQ.socket(@connection)
 #puts "rescheduling"
-Scheduler.reschedule
+Crystal::Scheduler.reschedule
 end #while
 end #def
 end #class
