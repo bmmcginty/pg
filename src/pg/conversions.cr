@@ -38,6 +38,7 @@ end
 
 def self.from_pg(io)
 v=Int64.from_pg(io)
+#puts "#{v} #{PG_EPOCH}"
 Time.epoch_microseconds(v+PG_EPOCH)
 end
 

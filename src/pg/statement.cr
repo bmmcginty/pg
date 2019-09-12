@@ -39,7 +39,7 @@ paramFormats << ((conv[:format]==:text) ? 0_i32 : 1_i32)
 paramLengths << conv[:value].as(IO::Memory).size
 pv=conv[:value].as(IO::Memory)
 paramValues[idx] = if i != nil
-pv.to_slice.pointer 0
+pv.to_slice.to_unsafe
 else
 Pointer(UInt8).null
 end

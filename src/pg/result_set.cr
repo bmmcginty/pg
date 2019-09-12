@@ -184,7 +184,7 @@ end
 end
 
 def resume
-@fiber.resume
+Crystal::Scheduler.enqueue @fiber
 end
 
 def get_tuple

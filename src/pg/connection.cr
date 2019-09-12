@@ -92,7 +92,7 @@ end #if error
 end #connect_loop
 
 def resume
-@fiber.resume
+Crystal::Scheduler.enqueue @fiber
 end
 
 protected def do_close
