@@ -1,29 +1,32 @@
 module PG
 class ResultSet < DB::ResultSet
-include ::PG::IOUtils
+include IO::Evented
+
 @query : String?
 @statement : DB::Statement
 @connection : DB::Connection
-@fiber : Fiber
 @tuple : LibPQ::Result?
 @row_num=-1
 @col_num=0
 @affected_rows : Int64?
-@flags=""
+@fd : Int32
 @eof=false
 
 setter :flags
-getter :col_num,:row_num
+getter :col_num,:row_num,:fd
 getter! :connection,:affected_rows
+
+def check_open
+raise IO::Error.new("closed connection") if @closed
+end
 
 def initialize(@statement,@query)
 super statement
-@fiber=Fiber.current
 @connection=statement.connection
-#puts "a:#{@query}"
+@fd = LibPQ.socket(@connection)
 @tuple=get_tuple.not_nil!
-#puts "b:#{@query}"
-get_affected_rows
+gar=get_affected_rows
+gar
 end
 
 def get_affected_rows
@@ -46,11 +49,15 @@ def row
 @tuple.not_nil!
 end
 
-def row_count
+def row_count : Int32
 LibPQ.ntuples(row)
 end
 
-def column_count
+def next_column_index : Int32
+@col_num
+end
+
+def column_count : Int32
 LibPQ.nfields(row)
 end
 
@@ -74,7 +81,6 @@ read
 end
 
 def get_io
-#puts "get_io:#{row_num},tuple:#{@tuple},col:#{col_num},st:#{st},stc:#{stc}"
 @col_num+=1
 if LibPQ.getisnull(row,row_num,col_num-1)==1
 return nil
@@ -110,7 +116,6 @@ end
 def read_without_converter(type)
 io=get_io
 return nil unless io
-#puts "type #{type} io #{io}"
 type.from_pg io.not_nil!
 end
 
@@ -128,29 +133,22 @@ LibPQ.clear @tuple.not_nil!
 close_events
 end
 
-def move_next
-#puts "move_next row_num:#{row_num},row_count:#{row_count},tuple:#{@tuple},status:#{st},stc:#{stc}"
+def move_next : Bool
 begin
 t=mmove_next
-#puts "move_next got:#{t}"
-#puts "move_next:#{t}"
 return t
 rescue e
-#puts "move_next got:#{e}"
-#puts "move_next:#{e}"
 raise e
 end
 end
 
 def mmove_next
 if @eof == true
-#puts "move_next:eof=true"
 return false
 end
 error=nil
 ret=false
 while 1
-#puts "row_num:#{row_num},row_count:#{row_count},tuple:#{@tuple},status:#{st},cst:#{cst}"
 if row_num < (row_count-1) && row_count > 0
 @row_num+=1
 @col_num=0
@@ -158,8 +156,7 @@ ret=true
 break
 end
 t=get_tuple
-#puts "tuple:#{t}"
-if t == nil
+if t.null?
 @eof=true
 ret=false
 break
@@ -167,7 +164,6 @@ end
 LibPQ.clear row
 @tuple=t.not_nil!
 @row_num=-1
-#puts "continuing while"
 end
 handle_error
 ret
@@ -183,33 +179,29 @@ raise DB::Error.new(e)
 end
 end
 
-def resume
-Crystal::Scheduler.enqueue @fiber
-end
-
-def get_tuple
+def get_tuple : LibPQ::Result
+ret=nil
 while 1
 good=LibPQ.consume_input(@connection)
-#puts "good:#{good}"
 if good==0
 e=String.new LibPQ.error_message(connection)
-#puts "e:#{e}"
-#puts "eek! #{e}"
 raise DB::Error.new(e)
 end
 #handle_notifications
 busy=LibPQ.is_busy(@connection)
-#puts "busy:#{busy}"
 if busy==0
 ret=LibPQ.get_result(@connection)
-#puts "ret:#{ret}"
-return ret
+break
 end
-create_event_r LibPQ.socket(@connection)
-#puts "rescheduling"
-Crystal::Scheduler.reschedule
+wait_readable
 end #while
+ret.not_nil!
 end #def
+
+def close_events
+evented_close
+end
+
 end #class
 
 end #module

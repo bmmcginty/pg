@@ -8,18 +8,20 @@ class ConnectionError < Exception
 end
 
 class Connection < DB::Connection
-include ::PG::IOUtils
+  include IO::Evented
+
 @closed = false
 @connection : LibPQ::Conn
-@fiber : Fiber
-@flags = ""
+@fd : Int32
 
-getter! :connection,:flags,:fiber,:closed
-setter :flags
+getter :fd, :connection, :closed
+
+def check_open
+raise IO::Error.new("closed connection") if @closed
+end
 
 def to_unsafe
 @connection.not_nil!
-#.as(LibPQ::Conn)
 end
 
 def initialize(context)
@@ -28,6 +30,7 @@ super
 cu=context.uri.dup
 cu.query=nil
 @connection=LibPQ.connect_start(cu.to_s)
+@fd=LibPQ.socket connection
 begin
 connect_loop
 LibPQ.setnonblocking(@connection,1_i32)
@@ -44,44 +47,37 @@ end #if query
 end #def
 
 def handle_send
-fd=LibPQ.socket connection
-#puts "handle send"
 while 1
 flushval=LibPQ.flush connection
-#puts "flush #{flushval}"
-#~~
 if flushval==-1
 e=String.new LibPQ.error_message(connection)
 raise DB::Error.new(e)
 end
 break if flushval == 0
-create_event_rw fd
-Crystal::Scheduler.reschedule
-if flags.index("r")
+wait_readable_writable
+case @read_write_event_flag
+when :r, :rw
 LibPQ.consume_input connection
 end
 next
 end
-#puts "end do_send"
 end
 
 def connect_loop
-fd=LibPQ.socket connection
 error=false
 status=LibPQ::PollingStatusType::Writing
 while 1
 case status
 when LibPQ::PollingStatusType::Writing
-e=create_event_w fd
+wait_writable
 when LibPQ::PollingStatusType::Reading
-e=create_event_r fd
+wait_readable
 when LibPQ::PollingStatusType::Failed
 error=true
 break
 when LibPQ::PollingStatusType::Ok
 break
 end #case
-Crystal::Scheduler.reschedule
 status=LibPQ.connect_poll(self)
 next
 end #while
@@ -110,13 +106,17 @@ end
 @closed=true
 end
 
-def build_prepared_statement(query)
+def build_prepared_statement(query) : DB::Statement
 #raise DB::Error.new("prepared statements not supported")
 Statement.new self,query
 end
 
-def build_unprepared_statement(query)
+def build_unprepared_statement(query) : DB::Statement
 Statement.new self,query
+end
+
+def close_events
+evented_close
 end
 
 end #connection class

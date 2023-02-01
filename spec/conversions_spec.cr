@@ -18,7 +18,7 @@ f64=[4.56789_f64,-0.0135_f64]
 bool=[true,false]
 string=["test","TESTing"]
 chars=['a','b']
-times=[Time.new(1789,1,2,12,34,56).to_utc,Time.now.to_utc]
+times=[Time.local(1789,1,2,12,34,56).to_utc,Time.local.to_utc]
 {% for w in %w(i16 i32 i64 f32 f64 bool string chars times) %}
 it "should convert {{w.id}}" do
 dbeq(db,{{w.id}}[0])

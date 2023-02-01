@@ -1,10 +1,5 @@
 module PG
 class Statement < DB::Statement
-@query: String
-def initialize(@connection,@query)
-super @connection
-end
-
 protected def perform_exec(args : Enumerable) : DB::ExecResult
 pq=perform_query(args)
 pq.do_close
@@ -29,7 +24,7 @@ paramFormats=Array(Int32).new(args.size)
 paramValues=Pointer(Pointer(UInt8)).malloc(args.size)
 paramLengths=Array(Int32).new(args.size)
 idx=-1
-args.each_with_index do |i|
+args.each do |i|
 next if i.is_a?(Slice(UInt8))
 idx+=1
 converter=Types.cr_pg_converter(i.class)
@@ -46,15 +41,14 @@ end
 end
 resultFormat=1 #binary
 #idx+1 was args.size
-rv=LibPQ.send_query_params(connection,@query,idx+1,paramTypes,paramValues,paramLengths,paramFormats,resultFormat)
+rv=LibPQ.send_query_params(connection,@command,idx+1,paramTypes,paramValues,paramLengths,paramFormats,resultFormat)
 connection.handle_send
-#puts "send_query_params:#{rv} #{@query.split(" from ")[0]}"
 if rv==0
 em=String.new LibPQ.error_message(connection)
 raise DB::Error.new em
 end
 #LibPQ.set_single_row_mode connection
-ResultSet.new self,@query
+ResultSet.new self,@command
 end #perform_query
 
 end

@@ -16,7 +16,6 @@ to_pg io
 end
 
 def to_pg(io)
-#puts "to_pg,#{T}"
 #ndims,flags,oid,dims|lbounds,arry
 1.to_pg io
 nils = self.any? { |i| i==nil }
@@ -43,7 +42,6 @@ io.seek endpos
 end #not nil
 end #each
 io.seek 0
-#puts io.gets_to_end.to_slice.hexstring
 end
 
 def do_convert(cv : PG::Types::Converter.class, io, i)

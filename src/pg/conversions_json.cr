@@ -10,7 +10,6 @@ Array(JSON::Any|Nil)
 end
 def self.from_pg(io : IO)
 v=io.read_byte
-#io.gets_to_end
 JSON.parse io
 end
 def self.to_pg(io : IO, obj)
@@ -36,4 +35,3 @@ def self.to_pg(io : IO, obj : JSON::Any)
 io << obj.to_json
 end
 end
-

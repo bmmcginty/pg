@@ -16,7 +16,7 @@ struct Time
 MICROSECONDS_PER_SECOND = 1_000_000_i64
 
 def microsecond
-nanosecond / NANOSECONDS_PER_MICROSECOND
+nanosecond // NANOSECONDS_PER_MICROSECOND
 end
 
 def epoch_microseconds : Int64
@@ -24,12 +24,11 @@ to_unix * MICROSECONDS_PER_SECOND + microsecond
 end
 
 def self.epoch_microseconds(microseconds : Int) : Time
-seconds=UNIX_EPOCH.total_seconds + (microseconds / MICROSECONDS_PER_SECOND)
+seconds=UNIX_EPOCH.total_seconds + (microseconds // MICROSECONDS_PER_SECOND)
 nanoseconds = (microseconds % MICROSECONDS_PER_SECOND) * NANOSECONDS_PER_MICROSECOND
 utc(seconds: seconds, nanoseconds: nanoseconds.to_i)
 end
 
-#puts Time.epoch_microseconds(PG_EPOCH)
 def to_pg(io : IO)
 v=to_utc.epoch_microseconds
 v = v - PG_EPOCH
@@ -38,7 +37,6 @@ end
 
 def self.from_pg(io)
 v=Int64.from_pg(io)
-#puts "#{v} #{PG_EPOCH}"
 Time.epoch_microseconds(v+PG_EPOCH)
 end
 
