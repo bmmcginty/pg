@@ -3,8 +3,8 @@ require "json"
 module PG::Types
 #All the possible types, either base crystal types, or converters
 alias Tt=\
-Char.class|Nil.class|Int16.class|Int32.class|Int64.class|Float32.class|Float64.class|String.class|Time.class|Bool.class|
-Array(Char).class|Array(Nil).class|Array(Int16).class|Array(Int32).class|Array(Int64).class|Array(Float32).class|Array(Float64).class|Array(String).class|Array(Time).class|Array(Bool).class|
+Char.class|Nil.class|Int16.class|Int32.class|Int64.class|Float32.class|Float64.class|String.class|Time.class|Bool.class|JSON::Any.class|
+Array(Char).class|Array(Nil).class|Array(Int16).class|Array(Int32).class|Array(Int64).class|Array(Float32).class|Array(Float64).class|Array(String).class|Array(Time).class|Array(Bool).class|Array(JSON::Any).class|
 Converter
 
 #This hash stores a mapping between pg oids and either a direct crystal class or a converter.
@@ -23,10 +23,10 @@ module PG::Types
 #Array({{converter.id}}).new.as(Array(PG::Types::Converter))
 #ConverterHolder(Array({{converter.id}})).new
 
-def self.cr_pg_converter(v : {{cls.id}}.class)
+def self.cr_pg_converter(v : {{cls.id+"|Nil"}}.class)
 {{converter.id}}
 end #def
-def self.cr_pg_converter(v : Array({{cls.id}}).class)
+def self.cr_pg_converter(v : Array({{cls.id+"|Nil"}}).class)
 Array({{converter.id}})
 end #def
 end #module

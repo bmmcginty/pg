@@ -18,6 +18,7 @@ type 700,1021,Float32,:float32
 type 701,1022,Float64,:float64
 type 1114,1115,Time,:timestamp
 type 1184,1185,Time,:timestamptz
+type 3802,3807,JSON::Any,:jsonb
 
 <<-EOF
 17,Bytea,
@@ -136,7 +137,4 @@ type 1184,1185,Time,:timestamptz
 EOF
 end
 end
-
-
-PG::Types.add_converter JSON::Any,PG::Types::JSONBConverter
 

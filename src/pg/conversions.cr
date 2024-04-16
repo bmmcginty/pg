@@ -103,5 +103,3 @@ ord.to_u8.to_pg io
 end
 end
 require "./types_catalog.cr"
-
-
