@@ -13,6 +13,8 @@ class Connection < DB::Connection
 @closed = false
 @connection : LibPQ::Conn
 @fd : Int32
+@read_timeout : Time::Span? = nil
+@write_timeout : Time::Span? = nil
 
 getter :fd, :connection, :closed
 

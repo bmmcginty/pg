@@ -11,6 +11,8 @@ include IO::Evented
 @affected_rows : Int64?
 @fd : Int32
 @eof=false
+@read_timeout : Time::Span? = nil
+@write_timeout : Time::Span? = nil
 
 setter :flags
 getter :col_num,:row_num,:fd
