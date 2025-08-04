@@ -1,126 +1,117 @@
-require "./utils"
 lib LibC
-fun fopen(LibC::Char*, LibC::Char*) : LibPQ::File*
+  fun fopen(LibC::Char*, LibC::Char*) : LibPQ::File*
 end
 
-module PG
-class ConnectionError < Exception
+class PG::ConnectionError < Exception
 end
 
-class Connection < DB::Connection
-  include IO::Evented
+class PG::Connection < DB::Connection
+  # include Crystal::EventLoop::FileDescriptor
+  @closed = false
+  @connection : LibPQ::Conn
+  @io : IO::FileDescriptor
+  @read_timeout : Time::Span? = nil
+  @write_timeout : Time::Span? = nil
 
-@closed = false
-@connection : LibPQ::Conn
-@fd : Int32
-@read_timeout : Time::Span? = nil
-@write_timeout : Time::Span? = nil
+  getter :io, :connection, :closed
 
-getter :fd, :connection, :closed
+  def check_open
+    raise IO::Error.new("closed connection") if @closed
+  end
 
-def check_open
-raise IO::Error.new("closed connection") if @closed
-end
+  def to_unsafe
+    @connection.not_nil!
+  end
 
-def to_unsafe
-@connection.not_nil!
-end
+  def initialize(context)
+    super
+    @fiber = Fiber.current
+    cu = context.uri.dup
+    cu.query = nil
+    @connection = LibPQ.connect_start(cu.to_s)
+    @io = IO::FileDescriptor.new fd: LibPQ.socket(connection), blocking: true
+    # puts "status #{LibPQ.status(self)}"
+    # , blocking: false
+    begin
+      connect_loop
+      LibPQ.setnonblocking(@connection, 1_i32)
+    rescue e
+      internal_close
+      raise e
+    end
+    if qs = context.uri.query
+      if t = qs.match /trace=([^&=]+)/
+        tfh = LibC.fopen t[1], "wb"
+        LibPQ.trace @connection, tfh
+      end # match
+    end   # if query
+  end     # def
 
-def initialize(context)
-super
-@fiber=Fiber.current
-cu=context.uri.dup
-cu.query=nil
-@connection=LibPQ.connect_start(cu.to_s)
-@fd=LibPQ.socket connection
-begin
-connect_loop
-LibPQ.setnonblocking(@connection,1_i32)
-rescue e
-internal_close
-raise e
-end
-if qs=context.uri.query
-if t=qs.match /trace=([^&=]+)/
-tfh=LibC.fopen t[1],"wb"
-LibPQ.trace @connection, tfh
-end #match
-end #if query
-end #def
+  def handle_send
+    while 1
+      flushval = LibPQ.flush connection
+      if flushval == -1
+        e = String.new LibPQ.error_message(connection)
+        raise DB::Error.new(e)
+      end
+      break if flushval == 0
+      Crystal::EventLoop.current.wait_readable(@io)
+      LibPQ.consume_input connection
+    end
+  end
 
-def handle_send
-while 1
-flushval=LibPQ.flush connection
-if flushval==-1
-e=String.new LibPQ.error_message(connection)
-raise DB::Error.new(e)
-end
-break if flushval == 0
-wait_readable_writable
-case @read_write_event_flag
-when :r, :rw
-LibPQ.consume_input connection
-end
-next
-end
-end
+  def connect_loop
+    error = false
+    status = LibPQ::PollingStatusType::Writing
+    while 1
+      # puts "status #{status}"
+      # puts "conn status #{LibPQ.status(self)}"
+      case status
+      when .writing?
+        Crystal::EventLoop.current.wait_writable(@io)
+        # puts "flushing"
+        @io.flush
+        # puts "flushed"
+      when .reading?
+        Crystal::EventLoop.current.wait_readable(@io)
+      when .failed?
+        error = true
+        break
+      when .ok?
+        break
+      end # case
+      # puts "polling"
+      status = LibPQ.connect_poll(self)
+      # puts "got status #{status}"
+      next
+    end # while
+    if error
+      e = String.new LibPQ.error_message(connection)
+      raise DB::Error.new(e)
+    end # if error
+  end   # connect_loop
 
-def connect_loop
-error=false
-status=LibPQ::PollingStatusType::Writing
-while 1
-case status
-when LibPQ::PollingStatusType::Writing
-wait_writable
-when LibPQ::PollingStatusType::Reading
-wait_readable
-when LibPQ::PollingStatusType::Failed
-error=true
-break
-when LibPQ::PollingStatusType::Ok
-break
-end #case
-status=LibPQ.connect_poll(self)
-next
-end #while
-if error
-e=String.new LibPQ.error_message(connection)
-raise DB::Error.new(e)
-end #if error
-end #connect_loop
+  protected def do_close
+    super
+    internal_close
+  end
 
-def resume
-Crystal::Scheduler.enqueue @fiber
-end
+  # This is separated out because a pool won't yet exist during a connect call.
+  # So the connection fails, we try to close the pool, and crystal segfaults.
+  private def internal_close
+    @io.close
+    unless @closed
+      LibPQ.finish connection
+    end
+    @closed = true
+  end
 
-protected def do_close
-super
-internal_close
-end
+  def build_prepared_statement(query) : DB::Statement
+    # raise DB::Error.new("prepared statements not supported")
+    Statement.new self, query
+  end
 
-#This is separated out because a pool won't yet exist during a connect call.
-#So the connection fails, we try to close the pool, and crystal segfaults.
-private def internal_close
-close_events
-unless @closed
-LibPQ.finish connection
-end
-@closed=true
-end
-
-def build_prepared_statement(query) : DB::Statement
-#raise DB::Error.new("prepared statements not supported")
-Statement.new self,query
-end
-
-def build_unprepared_statement(query) : DB::Statement
-Statement.new self,query
-end
-
-def close_events
-evented_close
-end
-
-end #connection class
-end
-
+  def build_unprepared_statement(query) : DB::Statement
+    Statement.new self, query
+  end
+end # connection class

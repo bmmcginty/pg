@@ -1,26 +1,25 @@
 module PG
-module Types
+  module Types
+    # nulls are passed as null pointers; we should be able to pass them as string oids here.
+    # 0,0?
+    type 0, 0, Nil, :null
+    type 16, 1000, Bool, :bool
+    type 23, 1007, Int32, :int32
+    type 18, 1002, Char, :char
+    type 20, 1016, Int64, :int64
+    type 21, 1005, Int16, :int16
+    type 25, 1009, String, :text
+    # look in conversions_json.cr to see where these are defined
+    # converters exist for both of these because of the similarity of the types
+    # type 114,199,JSON::Any,:json
+    # type 3802,3807,JSON::Any,:jsonb
+    type 700, 1021, Float32, :float32
+    type 701, 1022, Float64, :float64
+    type 1114, 1115, Time, :timestamp
+    type 1184, 1185, Time, :timestamptz
+    type 3802, 3807, JSON::Any, :jsonb
 
-#nulls are passed as null pointers; we should be able to pass them as string oids here.
-#0,0?
-type 0,0,Nil,:null
-type 16,1000,Bool,:bool
-type 23,1007,Int32,:int32
-type 18,1002,Char,:char
-type 20,1016,Int64,:int64
-type 21,1005,Int16,:int16
-type 25,1009,String,:text
-#look in conversions_json.cr to see where these are defined
-#converters exist for both of these because of the similarity of the types
-#type 114,199,JSON::Any,:json
-#type 3802,3807,JSON::Any,:jsonb
-type 700,1021,Float32,:float32
-type 701,1022,Float64,:float64
-type 1114,1115,Time,:timestamp
-type 1184,1185,Time,:timestamptz
-type 3802,3807,JSON::Any,:jsonb
-
-<<-EOF
+    <<-EOF
 17,Bytea,
 1001,Array(Bytea),
 19,Name,
@@ -135,6 +134,5 @@ type 3802,3807,JSON::Any,:jsonb
 16700,Array(IntbigGkey)
 }
 EOF
+  end
 end
-end
-

@@ -4,13 +4,13 @@ require "../src/pg"
 DB_URL = ENV["DATABASE_URL"]? || "postgres://bmmcginty:bmmcginty@localhost/test"
 PG_DB  = DB.open(DB_URL)
 
-def with_db
+def with_db(&)
   DB.open(DB_URL) do |db|
     yield db
   end
 end
 
-def with_connection
+def with_connection(&)
   DB.connect(DB_URL) do |conn|
     yield conn
   end

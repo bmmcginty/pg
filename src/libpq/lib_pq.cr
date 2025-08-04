@@ -4,21 +4,21 @@ lib LibPQ
   COPYRES_EVENTS      = 4
   COPYRES_NOTICEHOOKS = 8
   COPYRES_TUPLES      = 2
-  ErrorsDefault        = 1
-  ErrorsTerse          = 0
-  ErrorsVerbose        = 2
-  PingNoAttempt        = 3
-  PingNoResponse       = 2
-  PingOk               = 0
-  PingReject           = 1
-  ShowContextAlways    = 2
-  ShowContextErrors    = 1
-  ShowContextNever     = 0
-  TransActive          = 1
-  TransIdle            = 0
-  TransInerror         = 3
-  TransIntrans         = 2
-  TransUnknown         = 4
+  ErrorsDefault       = 1
+  ErrorsTerse         = 0
+  ErrorsVerbose       = 2
+  PingNoAttempt       = 3
+  PingNoResponse      = 2
+  PingOk              = 0
+  PingReject          = 1
+  ShowContextAlways   = 2
+  ShowContextErrors   = 1
+  ShowContextNever    = 0
+  TransActive         = 1
+  TransIdle           = 0
+  TransInerror        = 3
+  TransIntrans        = 2
+  TransUnknown        = 4
   alias Oid = LibC::UInt
   alias NoticeProcessor = (Void*, LibC::Char* -> Void)
   alias NoticeReceiver = (Void*, Result -> Void)
@@ -49,7 +49,7 @@ lib LibPQ
     FatalError    = 7
     CopyBoth      = 8
     SingleTuple   = 9
-  end 
+  end
   enum ContextVisibility
     ShowContextNever  = 0
     ShowContextErrors = 1
