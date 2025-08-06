@@ -29,8 +29,6 @@ class PG::Connection < DB::Connection
     cu.query = nil
     @connection = LibPQ.connect_start(cu.to_s)
     @io = IO::FileDescriptor.new fd: LibPQ.socket(connection), blocking: true
-    # puts "status #{LibPQ.status(self)}"
-    # , blocking: false
     begin
       connect_loop
       LibPQ.setnonblocking(@connection, 1_i32)
@@ -47,7 +45,7 @@ class PG::Connection < DB::Connection
   end     # def
 
   def handle_send
-    tmp = 2
+    tmp = 1
     while 1
       flushval = LibPQ.flush connection
       if flushval == -1
@@ -67,8 +65,6 @@ class PG::Connection < DB::Connection
     error = false
     tmp_status = status = LibPQ::PollingStatusType::Writing
     while 1
-      # puts "status #{status}"
-      # puts "conn status #{LibPQ.status(self)}"
       case status
       when .writing?
         if status != tmp_status
@@ -86,9 +82,7 @@ class PG::Connection < DB::Connection
       when .ok?
         break
       end # case
-      # puts "polling"
       status = LibPQ.connect_poll(self)
-      # puts "got status #{status}"
       next
     end # while
     if error
@@ -113,7 +107,6 @@ class PG::Connection < DB::Connection
   end
 
   def build_prepared_statement(query) : DB::Statement
-    # raise DB::Error.new("prepared statements not supported")
     Statement.new self, query
   end
 

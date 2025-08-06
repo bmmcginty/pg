@@ -42,13 +42,13 @@ module PG
       resultFormat = 1 # binary
       # idx+1 was args.size
       rv = LibPQ.send_query_params(connection, @command, idx + 1, paramTypes, paramValues, paramLengths, paramFormats, resultFormat)
-      connection.handle_send
       if rv == 0
         em = String.new LibPQ.error_message(connection)
         raise DB::Error.new em
       end
+      connection.handle_send
       # LibPQ.set_single_row_mode connection
-      ResultSet.new self, @command
+      ResultSet.new self, @command, connection.io
     end # perform_query
 
   end

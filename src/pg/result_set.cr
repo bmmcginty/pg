@@ -20,10 +20,9 @@ module PG
       raise IO::Error.new("closed connection") if @closed
     end
 
-    def initialize(@statement, @query)
+    def initialize(@statement, @query, @io)
       super statement
       @connection = statement.connection
-      @io = IO::FileDescriptor.new(fd: LibPQ.socket(@connection), blocking: false)
       @tuple = get_tuple.not_nil!
       gar = get_affected_rows
       gar
@@ -130,7 +129,6 @@ module PG
       end
       LibPQ.clear @tuple.not_nil!
       @tuple = nil
-      # @io.close
     end
 
     def move_next : Bool
@@ -187,7 +185,6 @@ module PG
           e = String.new LibPQ.error_message(connection)
           raise DB::Error.new(e)
         end
-        # handle_notifications
         busy = LibPQ.is_busy(@connection)
         if busy == 0
           ret = LibPQ.get_result(@connection)
