@@ -6,7 +6,6 @@ class PG::ConnectionError < Exception
 end
 
 class PG::Connection < DB::Connection
-  # include Crystal::EventLoop::FileDescriptor
   @closed = false
   @connection : LibPQ::Conn
   @io : IO::FileDescriptor
@@ -48,6 +47,7 @@ class PG::Connection < DB::Connection
   end     # def
 
   def handle_send
+    tmp = 2
     while 1
       flushval = LibPQ.flush connection
       if flushval == -1
@@ -55,25 +55,31 @@ class PG::Connection < DB::Connection
         raise DB::Error.new(e)
       end
       break if flushval == 0
-      Crystal::EventLoop.current.wait_readable(@io)
+      if tmp != flushval
+        Crystal::EventLoop.current.wait_readable(@io)
+        tmp = flushval
+      end
       LibPQ.consume_input connection
     end
   end
 
   def connect_loop
     error = false
-    status = LibPQ::PollingStatusType::Writing
+    tmp_status = status = LibPQ::PollingStatusType::Writing
     while 1
       # puts "status #{status}"
       # puts "conn status #{LibPQ.status(self)}"
       case status
       when .writing?
-        Crystal::EventLoop.current.wait_writable(@io)
-        # puts "flushing"
-        @io.flush
-        # puts "flushed"
+        if status != tmp_status
+          Crystal::EventLoop.current.wait_writable(@io)
+          tmp_status = status
+        end
       when .reading?
-        Crystal::EventLoop.current.wait_readable(@io)
+        if status != tmp_status
+          Crystal::EventLoop.current.wait_readable(@io)
+          tmp_status = status
+        end
       when .failed?
         error = true
         break
