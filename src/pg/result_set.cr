@@ -8,6 +8,7 @@ module PG
     @col_num = 0
     @affected_rows : Int64?
     @io : IO::FileDescriptor
+    @first = true
     @eof = false
     @read_timeout : Time::Span? = nil
     @write_timeout : Time::Span? = nil
@@ -181,16 +182,24 @@ module PG
       ret = nil
       while 1
         good = LibPQ.consume_input(@connection)
+        # puts "got #{good}"
         if good == 0
           e = String.new LibPQ.error_message(connection)
           raise DB::Error.new(e)
         end
+        # puts "getting busy"
         busy = LibPQ.is_busy(@connection)
+        # puts "got #{busy}"
         if busy == 0
+          # puts "getting result"
           ret = LibPQ.get_result(@connection)
+          # puts "got #{ret}"
           break
         end
-        Crystal::EventLoop.current.wait_readable(@io)
+        # puts "wait readable"
+        # puts "wait readable"
+        #        Crystal::EventLoop.current.wait_readable(@io)
+        # puts "consume input"
       end # while
       ret.not_nil!
     end # def

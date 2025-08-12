@@ -28,7 +28,7 @@ class PG::Connection < DB::Connection
     cu = context.uri.dup
     cu.query = nil
     @connection = LibPQ.connect_start(cu.to_s)
-    @io = IO::FileDescriptor.new fd: LibPQ.socket(connection), blocking: true
+    @io = IO::FileDescriptor.new fd: LibPQ.socket(connection), blocking: false
     begin
       connect_loop
       LibPQ.setnonblocking(@connection, 1_i32)
@@ -48,16 +48,19 @@ class PG::Connection < DB::Connection
     tmp = 1
     while 1
       flushval = LibPQ.flush connection
+      # puts "flushval #{flushval}"
       if flushval == -1
         e = String.new LibPQ.error_message(connection)
         raise DB::Error.new(e)
       end
       break if flushval == 0
       if tmp != flushval
+        # puts "wait readable"
         Crystal::EventLoop.current.wait_readable(@io)
         tmp = flushval
       end
-      LibPQ.consume_input connection
+      # puts "consuming input"
+      LibPQ.consume_input(connection)
     end
   end
 

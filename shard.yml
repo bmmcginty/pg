@@ -1,5 +1,5 @@
 name: pg
-version: 0.1.1
+version: 0.1.2
 
 authors:
   - Brandon McGinty <bmmcginty@bmcginty.us>
@@ -9,6 +9,6 @@ dependencies:
     github: crystal-lang/crystal-db
     version: 0.11.0
 
-crystal: ">= 1.7.0, < 2.0.0"
+crystal: ">= 1.17.0, < 2.0.0"
 
 license: MIT
