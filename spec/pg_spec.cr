@@ -1,6 +1,7 @@
 require "./spec_helper"
 require "./driver_spec.cr"
 require "./conversions_spec.cr"
+require "./notify_spec.cr"
 
 describe Pg do
   jp = JSON.parse %(

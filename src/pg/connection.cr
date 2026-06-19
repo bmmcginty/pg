@@ -67,6 +67,35 @@ class PG::Connection < DB::Connection
     end
   end
 
+  def notification? : Notification?
+    if LibPQ.consume_input(connection) == 0
+      e = String.new LibPQ.error_message(connection)
+      raise DB::Error.new(e)
+    end
+
+    notify = LibPQ.notifies(connection)
+    return nil if notify.null?
+
+    begin
+      Notification.new(
+        String.new(notify.value.relname),
+        notify.value.be_pid,
+        String.new(notify.value.extra)
+      )
+    ensure
+      LibPQ.freemem(notify.as(Void*))
+    end
+  end
+
+  def wait_for_notification : Notification
+    loop do
+      if notification = notification?
+        return notification
+      end
+      Crystal::EventLoop.current.wait_readable(@io)
+    end
+  end
+
   def connect_loop
     error = false
     tmp_status = status = LibPQ::PollingStatusType::Writing
