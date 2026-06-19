@@ -196,14 +196,10 @@ module PG
           # puts "got #{ret}"
           break
         end
-        # puts "wait readable"
-        # puts "wait readable"
-        #        Crystal::EventLoop.current.wait_readable(@io)
-        # puts "consume input"
+        Crystal::EventLoop.current.wait_readable(@io)
       end # while
       ret.not_nil!
     end # def
-
-  end # class
+  end   # class
 
 end # module

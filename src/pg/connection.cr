@@ -28,7 +28,9 @@ class PG::Connection < DB::Connection
     cu = context.uri.dup
     cu.query = nil
     @connection = LibPQ.connect_start(cu.to_s)
-    @io = IO::FileDescriptor.new fd: LibPQ.socket(connection), blocking: false
+    socket = LibPQ.socket(connection)
+    IO::FileDescriptor.set_blocking(socket, false)
+    @io = IO::FileDescriptor.new(handle: socket)
     begin
       connect_loop
       LibPQ.setnonblocking(@connection, 1_i32)
@@ -45,22 +47,23 @@ class PG::Connection < DB::Connection
   end     # def
 
   def handle_send
-    tmp = 1
     while 1
       flushval = LibPQ.flush connection
-      # puts "flushval #{flushval}"
-      if flushval == -1
+      case flushval
+      when -1
+        e = String.new LibPQ.error_message(connection)
+        raise DB::Error.new(e)
+      when 0
+        break
+      end
+
+      Crystal::EventLoop.current.wait_readable_or_writable(@io)
+      if LibPQ.consume_input(connection) == 0
         e = String.new LibPQ.error_message(connection)
         raise DB::Error.new(e)
       end
-      break if flushval == 0
-      if tmp != flushval
-        # puts "wait readable"
-        Crystal::EventLoop.current.wait_readable(@io)
-        tmp = flushval
-      end
-      # puts "consuming input"
-      LibPQ.consume_input(connection)
+      # If the socket was write-ready, the next loop iteration calls PQflush.
+      # If it was read-ready, draining input can unblock the server.
     end
   end
 
