@@ -18,6 +18,24 @@ lib LibC
 end
 
 abstract class Crystal::EventLoop
+  # libpq reads directly from its socket and may leave unread data behind after
+  # PQconsumeInput. Check for that data without blocking before waiting for a
+  # new edge from Crystal's event loop.
+  def libpq_readable?(file_descriptor : Crystal::System::FileDescriptor) : Bool
+    pollfd = LibC::Pollfd.new
+    pollfd.fd = file_descriptor.fd
+    pollfd.events = LibC::POLLIN.to_i16
+
+    loop do
+      ret = LibC.poll(pointerof(pollfd), 1_u64, 0)
+      return ret > 0 unless ret == -1
+
+      errno = Errno.value
+      next if errno == Errno::EINTR
+      raise IO::Error.from_os_error("poll", errno, target: file_descriptor)
+    end
+  end
+
   # Waits until *file_descriptor* can make read or write progress.
   #
   # This is the readiness primitive libpq needs when PQflush still has buffered

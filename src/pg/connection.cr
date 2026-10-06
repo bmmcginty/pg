@@ -92,7 +92,8 @@ class PG::Connection < DB::Connection
       if notification = notification?
         return notification
       end
-      Crystal::EventLoop.current.wait_readable(@io)
+      event_loop = Crystal::EventLoop.current
+      event_loop.wait_readable(@io) unless event_loop.libpq_readable?(@io)
     end
   end
 

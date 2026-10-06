@@ -61,6 +61,50 @@ describe PG::Driver do
     end
   end
 
+  it "does not block other fibers while waiting for PostgreSQL" do
+    with_connection do |connection|
+      done = Channel(Nil).new
+      started = Time.instant
+
+      spawn do
+        connection.exec "select pg_sleep(0.5)"
+        done.send(nil)
+      end
+
+      sleep 20.milliseconds
+      (Time.instant - started).should be < 250.milliseconds
+      done.receive
+    end
+  end
+
+  it "reads results spanning multiple PostgreSQL output buffers" do
+    values = (1..28).map { |i| "#{i}:" + "x" * 1_250 }
+    selects = values.each_index.map { |i| "select $#{i + 1}" }.join(" union ")
+    query = <<-SQL
+      with input(value) as (#{selects})
+      insert into large_result_test(value)
+      select value from input
+      on conflict(value) do update set value=excluded.value
+      returning id, value
+      SQL
+
+    with_connection do |connection|
+      connection.exec "create temporary table large_result_test (id serial, value text unique)"
+
+      10.times do
+        returned = 0
+        connection.query(query, args: values) do |rs|
+          rs.each do
+            rs.read(Int32).should be_a(Int32)
+            rs.read(String).should be_a(String)
+            returned += 1
+          end
+        end
+        returned.should eq(values.size)
+      end
+    end
+  end
+
   it "executes update" do
     PG_DB.exec "drop table if exists contacts"
     PG_DB.exec "create table contacts (name varchar(256), age int4)"

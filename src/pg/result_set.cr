@@ -196,7 +196,8 @@ module PG
           # puts "got #{ret}"
           break
         end
-        Crystal::EventLoop.current.wait_readable(@io)
+        event_loop = Crystal::EventLoop.current
+        event_loop.wait_readable(@io) unless event_loop.libpq_readable?(@io)
       end # while
       ret.not_nil!
     end # def
